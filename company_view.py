@@ -6,7 +6,15 @@ from datetime import datetime
 def post_internship(user):
     st.header("Post New Internship")
     
+    # Fetch current company details
+    try:
+        profile_response = supabase.table("profiles_names").select("company_name").eq("id", user.id).single().execute()
+        current_company_name = profile_response.data.get("company_name", "") if profile_response.data else ""
+    except:
+        current_company_name = ""
+
     with st.form("post_internship_form"):
+        company_name = st.text_input("Company Name", value=current_company_name)
         title = st.text_input("Internship Title")
         role = st.text_input("Role (e.g., Frontend Developer)")
         description = st.text_area("Description")
@@ -17,22 +25,30 @@ def post_internship(user):
         
         submitted = st.form_submit_button("Post Internship")
         if submitted:
-            skills = [s.strip() for s in skills_str.split(",") if s.strip()]
-            try:
-                supabase.table("internships").insert({
-                    "company_id": user.id,
-                    "title": title,
-                    "role": role,
-                    "description": description,
-                    "location": location,
-                    "duration": duration,
-                    "stipend": stipend,
-                    "skills_required": skills,
-                    "status": "open"
-                }).execute()
-                st.success("Internship posted successfully!")
-            except Exception as e:
-                st.error(f"Error posting internship: {e}")
+            if not title or not role or not description or not company_name:
+                st.error("Please fill in all required fields (Company Name, Title, Role, Description).")
+            else:
+                skills = [s.strip() for s in skills_str.split(",") if s.strip()]
+                try:
+                    # Update company name in profile if changed
+                    if company_name != current_company_name:
+                        supabase.table("profiles_names").update({"company_name": company_name}).eq("id", user.id).execute()
+                    
+                    # Insert internship
+                    supabase.table("internships").insert({
+                        "company_id": user.id,
+                        "title": title,
+                        "role": role,
+                        "description": description,
+                        "location": location,
+                        "duration": duration,
+                        "stipend": stipend,
+                        "skills_required": skills,
+                        "status": "open"
+                    }).execute()
+                    st.success("Internship posted successfully!")
+                except Exception as e:
+                    st.error(f"Error posting internship: {e}")
 
 def manage_applications(user):
     st.header("Manage Applications")

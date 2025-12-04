@@ -91,10 +91,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 def login_page():
-    st.title("Login")
+    st.markdown("### Welcome Back")
     email = st.text_input("Email", key="login_email")
     password = st.text_input("Password", type="password", key="login_password")
-    if st.button("Login", key="login_btn"):
+    if st.button("Login", key="login_btn", use_container_width=True):
         try:
             auth_response = supabase.auth.sign_in_with_password({"email": email, "password": password})
             st.session_state["user"] = auth_response.user
@@ -105,13 +105,13 @@ def login_page():
             st.error(f"Login failed: {e}")
 
 def signup_page():
-    st.title("Sign Up")
+    st.markdown("### Create Account")
     email = st.text_input("Email", key="signup_email")
     password = st.text_input("Password", type="password", key="signup_password")
     full_name = st.text_input("Full Name", key="signup_name")
     role = st.selectbox("I am a...", ["student", "company"], key="signup_role")
     
-    if st.button("Sign Up", key="signup_btn"):
+    if st.button("Sign Up", key="signup_btn", use_container_width=True):
         try:
             # Sign up with metadata
             auth_response = supabase.auth.sign_up({
@@ -148,11 +148,22 @@ def main():
         else:
             st.error("Role not assigned. Please contact support.")
     else:
-        tab1, tab2 = st.tabs(["Login", "Sign Up"])
-        with tab1:
-            login_page()
-        with tab2:
-            signup_page()
+        # Centered Login/Signup Card
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.markdown("""
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h1>Internship Portal</h1>
+                <p style="color: #94A3B8;">Connect with top companies and find your dream internship.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            with st.container(border=True):
+                tab1, tab2 = st.tabs(["Login", "Sign Up"])
+                with tab1:
+                    login_page()
+                with tab2:
+                    signup_page()
 
 if __name__ == "__main__":
     main()

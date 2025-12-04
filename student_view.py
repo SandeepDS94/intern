@@ -109,11 +109,13 @@ def browse_internships(user):
     st.header("Browse Internships")
     
     # Filters
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         search_term = st.text_input("Search by Title or Role")
     with col2:
         location_filter = st.text_input("Filter by Location")
+    with col3:
+        skill_filter = st.text_input("Filter by Skill")
 
     # Fetch Internships
     query = supabase.table("internships").select("*, profiles_names(company_name)").eq("status", "open")
@@ -122,6 +124,16 @@ def browse_internships(user):
         query = query.ilike("title", f"%{search_term}%")
     if location_filter:
         query = query.ilike("location", f"%{location_filter}%")
+    if skill_filter:
+        # Filter where skills_required array contains the skill_filter
+        # Note: 'cs' operator checks if the array contains the value. 
+        # Since we are searching for a single string in an array of strings, we wrap it in a list.
+        # However, exact match might be too strict. Let's try to find a way to do partial match if possible,
+        # but Supabase/PostgREST array support is limited for partial match inside elements.
+        # For now, we will use 'cs' which requires exact match of the element, or we can fetch all and filter in Python.
+        # Fetching all and filtering in Python is safer for partial matches (e.g. "React" matching "ReactJS").
+        # But let's try to use the database first for efficiency. 'cs' expects {value}.
+        query = query.cs("skills_required", [skill_filter])
         
     try:
         response = query.execute()
@@ -135,13 +147,13 @@ def browse_internships(user):
         return
 
     for internship in internships:
-        with st.expander(f"{internship['title']} at {internship['profiles_names']['company_name']}"):
-            st.write(f"**Role:** {internship['role']}")
-            st.write(f"**Location:** {internship['location']}")
-            st.write(f"**Stipend:** {internship['stipend']}")
-            st.write(f"**Duration:** {internship['duration']}")
-            st.write(f"**Description:** {internship['description']}")
-            st.write(f"**Skills Required:** {', '.join(internship['skills_required'] or [])}")
+        with st.expander(f"{internship['title'] or 'Untitled'} at {internship['profiles_names']['company_name'] or 'Unknown Company'}"):
+            st.write(f"**Role:** {internship['role'] or 'Not specified'}")
+            st.write(f"**Location:** {internship['location'] or 'Not specified'}")
+            st.write(f"**Stipend:** {internship['stipend'] or 'Not specified'}")
+            st.write(f"**Duration:** {internship['duration'] or 'Not specified'}")
+            st.write(f"**Description:** {internship['description'] or 'No description provided.'}")
+            st.write(f"**Skills Required:** {', '.join(internship['skills_required'] or []) or 'None'}")
             
             # Check if already applied
             try:
